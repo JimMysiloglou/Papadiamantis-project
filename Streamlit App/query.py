@@ -1,6 +1,7 @@
-from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.runnables import RunnableBranch
 from langchain_core.output_parsers import StrOutputParser
+from langchain_classic.memory import ConversationBufferWindowMemory
 from langchain_openai import ChatOpenAI
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_huggingface import ChatHuggingFace, HuggingFaceEndpoint
@@ -11,18 +12,25 @@ import streamlit as st
 def context_exists(inputs: dict) -> bool:
     return bool(inputs.get("context"))
 
+@st.cache_resource
+def initiate_memory(k=5):
+    memory = ConversationBufferWindowMemory(k=k, return_messages=True)
+    return memory
 
-def generate_response(query, use_context, retrievers, source_type, model, temperature, system_prompt, contextualize_instructions):
+
+def generate_response(query, use_context, retrievers, source_type, memory, model, temperature, system_prompt, contextualize_instructions):
 
     prompt_with_context = ChatPromptTemplate.from_messages(
     [
         ("system", system_prompt),
+        MessagesPlaceholder(variable_name="history", optional=True),
         ("system", contextualize_instructions + "\n\n{context}"),
         ("user", "{question}")
     ])
 
     prompt_without_context = ChatPromptTemplate.from_messages([
     ("system", system_prompt),
+    MessagesPlaceholder(variable_name="history", optional=True),
     ("user", "{question}")
     ])
     
@@ -72,7 +80,8 @@ def generate_response(query, use_context, retrievers, source_type, model, temper
     # Prepare input for the chain
     inputs = {
         "question": query,
-        "context": context
+        "context": context,
+        "history": memory.load_memory_variables({})["history"]
     }
 
     # Compose the chain
