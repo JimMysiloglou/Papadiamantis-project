@@ -1,6 +1,6 @@
 import streamlit as st
 from retriever import get_retrievers
-from query import initiate_memory, generate_response
+from query import generate_response
 import torch
 
 torch.classes.__path__ = []
@@ -32,16 +32,12 @@ st.title("📜 Papadiamantis RAG Explorer")
 if "retrievers" not in st.session_state:
     st.session_state["retrievers"] = get_retrievers()
 
-if "memory" not in st.session_state:
-    st.session_state["memory"] = initiate_memory()
-
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
 # Reset Conversation Button
 if st.sidebar.button("🧹 New Conversation"):
     st.session_state.messages = []
-    st.session_state.memory = initiate_memory()
     st.rerun()
 
 if st.sidebar.button("Prepare download"):
@@ -62,8 +58,8 @@ with st.sidebar.form(key="settings_form"):
     st.session_state.setdefault("llm_model", "ChatGPT 5")
     st.session_state.setdefault("use_context", False)
     st.session_state.setdefault("temperature", 0.5)
-    st.session_state.setdefault("system_prompt", "You are a writer.")
-    st.session_state.setdefault("contextualize_instructions", "Base your style, language, and thematic choices on the provided context. Avoid introducing elements that do not reflect its style:")
+    st.session_state.setdefault("system_prompt", "Είσαι ένα συγγραφέας.")
+    st.session_state.setdefault("contextualize_instructions", "Χρησιμοποίησε τα παρακάτω αποσπάσματα κειμένου ως παράδειγμα:")
 
     st.selectbox(
         "Select LLM Model",
@@ -120,7 +116,6 @@ if user_input:
                 use_context=st.session_state.use_context,
                 retrievers=st.session_state["retrievers"],
                 source_type=st.session_state.source_type,
-                memory=st.session_state["memory"],
                 model=llm_display_names[st.session_state.llm_model],
                 temperature=st.session_state.temperature,
                 system_prompt=st.session_state.system_prompt,
